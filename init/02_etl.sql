@@ -1,18 +1,17 @@
--- Connect to the target database
-\c "MyDatabase"
+\c salesdb
 
--- Clean up existing data to ensure a fresh load
-TRUNCATE TABLE customers RESTART IDENTITY CASCADE;
-TRUNCATE TABLE orders RESTART IDENTITY CASCADE;
+-- Using the schema name (sales.) is required here!
+\echo 'Loading Customers...'
+COPY sales.customers FROM '/docker-entrypoint-initdb.d/data/Customers.csv' WITH (FORMAT csv, HEADER true);
 
-\echo 'Loading customers data...'
-COPY customers(id, first_name, country, score)
-FROM '/docker-entrypoint-initdb.d/data/customers.csv'
-WITH (FORMAT csv, HEADER true);
+\echo 'Loading Employees...'
+COPY sales.employees FROM '/docker-entrypoint-initdb.d/data/Employees.csv' WITH (FORMAT csv, HEADER true);
 
-\echo 'Loading orders data...'
-COPY orders(order_id, customer_id, order_date, sales)
-FROM '/docker-entrypoint-initdb.d/data/orders.csv'
-WITH (FORMAT csv, HEADER true);
+\echo 'Loading Products...'
+COPY sales.products FROM '/docker-entrypoint-initdb.d/data/Products.csv' WITH (FORMAT csv, HEADER true);
 
-\echo 'Data load complete.'
+\echo 'Loading Orders...'
+COPY sales.orders FROM '/docker-entrypoint-initdb.d/data/Orders.csv' WITH (FORMAT csv, HEADER true);
+
+\echo 'Loading Orders Archive...'
+COPY sales.ordersarchive FROM '/docker-entrypoint-initdb.d/data/OrdersArchive.csv' WITH (FORMAT csv, HEADER true);
