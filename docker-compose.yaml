@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5433:5432"  # Your PC (5433) -> Container (5432)
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -17,7 +17,7 @@ services:
       retries: 10
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
-      - ./scripts:/docker-entrypoint-initdb.d
+      - ./init:/docker-entrypoint-initdb.d
       - ./data:/docker-entrypoint-initdb.d/data:ro
 
   pgadmin:
@@ -26,14 +26,18 @@ services:
     restart: always
     env_file: .env
     environment:
-      # These variables must match the names expected by pgAdmin
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      # This line below helps bypass some permission checks in certain environments
+      PGADMIN_LISTEN_PORT: 80
     ports:
       - "5050:80"
     volumes:
-      - ./pgadmin_data:/var/lib/pgadmin
-      - ./queries:/var/lib/pgadmin/storage/admin_admin.com/queries
+      # Use the named volume for everything internal to pgAdmin
+      - pgadmin_internal_data:/var/lib/pgadmin
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  pgadmin_internal_data:
