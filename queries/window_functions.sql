@@ -136,3 +136,41 @@ FROM
 	LAG(SUM(sales)) OVER(ORDER BY EXTRACT(MONTH FROM OrderDate)) AS previous_month_sales
 FROM orders
 	group by EXTRACT (MONTH FROM OrderDate))
+
+-- in order to analyze customer loyalty, rank customers based on the average days between their orders
+SELECT
+customerid,
+AVG(daysuntilnextorder) AvgDays,
+RANK() OVER (ORDER BY COALESCE(AVG(daysuntilnextorder), 999999)) RankAvg
+FROM
+(SELECT
+	orderid,
+	customerid,
+	orderdate AS current_order,
+	LEAD(orderdate) OVER(PARTITION BY customerid ORDER BY orderdate) AS next_order,
+	LEAD(orderdate) OVER(PARTITION BY customerid ORDER BY orderdate) - orderdate AS daysuntilnextorder
+FROM orders
+ORDER BY customerid, orderdate) t
+GROUP BY customerid;
+-- Find the highest and the lowest sales for each product / 1st option
+SELECT
+	orderid,
+	productid,
+	sales,
+	MAX(sales) OVER(PARTITION BY customerid) highestsales,
+	MIN(sales) OVER(PARTITION BY customerid) lowestsales
+FROM orders;
+-- Find the highest and the lowest sales for each product / 2nd option
+-- find the difference between highest and lowest sales
+SELECT
+	orderid,
+	productid,
+	sales,
+	FIRST_VALUE(sales) OVER(PARTITION BY productid ORDER BY sales asc) as lowest,
+	LAST_VALUE(sales) OVER(PARTITION BY productid ORDER BY sales ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) as highest,
+	-- MIN(sales) OVER(PARTITION BY productid) as lowest2,
+	-- MAX(sales) OVER(PARTITION BY productid) as highest2,
+	sales - FIRST_VALUE(sales) OVER(PARTITION BY productid ORDER BY sales) as salesdiff
+
+FROM orders
+
